@@ -1,42 +1,41 @@
-/*
-=============================================================
-Create Database and Schemas
-=============================================================
-Script Purpose:
-    This script creates a new database named 'DataWarehouse' after checking if it already exists. 
-    If the database exists, it is dropped and recreated. Additionally, the script sets up three schemas 
-    within the database: 'bronze', 'silver', and 'gold'.
-	
-WARNING:
-    Running this script will drop the entire 'DataWarehouse' database if it exists. 
-    All data in the database will be permanently deleted. Proceed with caution 
-    and ensure you have proper backups before running this script.
-*/
+-- =============================================================
+-- Create Database and Schemas
+-- =============================================================
+-- Script Purpose:
+--     This script drops and recreates the 'datawarehouse' database,
+--     then sets up three schemas: 'bronze', 'silver', and 'gold'.
+--
+-- WARNING:
+--     Running this script will permanently delete the 'datawarehouse' database
+--     if it exists. Ensure proper backups before proceeding.
+-- =============================================================
 
-USE master;
-GO
-
--- Drop and recreate the 'DataWarehouse' database
-IF EXISTS (SELECT 1 FROM sys.databases WHERE name = 'DataWarehouse')
+-- Connect to the default 'postgres' database to manage other databases
+-- Drop the 'datawarehouse' database if it exists
+DO $$
 BEGIN
-    ALTER DATABASE DataWarehouse SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE DataWarehouse;
-END;
-GO
+    IF EXISTS (
+        SELECT FROM pg_database WHERE datname = 'datawarehouse'
+    ) THEN
+        -- Terminate active connections to allow drop
+        PERFORM pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = 'datawarehouse'
+          AND pid <> pg_backend_pid();
 
--- Create the 'DataWarehouse' database
-CREATE DATABASE DataWarehouse;
-GO
+        DROP DATABASE datawarehouse;
+    END IF;
+END $$;
 
-USE DataWarehouse;
-GO
+-- Create the new database
+CREATE DATABASE datawarehouse;
 
--- Create Schemas
+-- ⚠️ PostgreSQL does not support USE; reconnect to 'datawarehouse' manually
+-- Example in psql CLI:
+-- \c datawarehouse
+
+-- After reconnecting, create schemas
+-- These commands should be run inside the 'datawarehouse' session
 CREATE SCHEMA bronze;
-GO
-
 CREATE SCHEMA silver;
-GO
-
 CREATE SCHEMA gold;
-GO
